@@ -1,0 +1,124 @@
+/* === Rich Text Editor === */
+.rich-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.rich-editor-toolbar {
+  display: flex;
+  gap: 2px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg);
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-warm);
+  color: var(--text);
+}
+
+.toolbar-btn.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.toolbar-divider {
+  width: 1px;
+  background: var(--border);
+  margin: 0 6px;
+}
+
+.rich-editor-content {
+  min-height: 400px;
+  padding: 20px 24px;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text);
+  outline: none;
+  overflow-y: auto;
+}
+
+.rich-editor-content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  font-style: italic;
+  pointer-events: none;
+}
+
+.rich-editor-content h2 {
+  font-size: 1.4rem;
+  margin: 1em 0 0.5em;
+}
+
+.rich-editor-content h3 {
+  font-size: 1.15rem;
+  margin: 0.8em 0 0.4em;
+}
+
+.rich-editor-content p {
+  margin-bottom: 0.8em;
+}
+
+.rich-editor-content blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 0.8em 0;
+  padding-left: 1em;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+.rich-editor-content strong {
+  font-weight: 600;
+}
+
+.rich-editor-content em {
+  font-style: italic;
+}
+
+.rich-editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 0.8em 0;
+  display: block;
+}
+
+/* Mobile toolbar touch targets */
+@media (max-width: 900px) {
+  .toolbar-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  .toolbar-divider {
+    display: none;
+  }
+  .rich-editor-toolbar {
+    gap: 4px;
+    padding: 6px 8px;
+  }
+  .rich-editor-content {
+    min-height: 250px;
+    padding: 16px;
+    font-size: 1rem;
+  }
+}

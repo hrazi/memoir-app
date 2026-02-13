@@ -1,0 +1,21 @@
+Options -Indexes
+RewriteEngine On
+RewriteBase /abbu-book/
+
+# Block sensitive files and directories
+RewriteRule ^data/ - [F,L]
+RewriteRule ^server\.js$ - [F,L]
+RewriteRule ^package - [F,L]
+RewriteRule ^deploy\.js$ - [F,L]
+RewriteRule ^node_modules/ - [F,L]
+RewriteRule ^\.env$ - [F,L]
+RewriteRule ^public/ - [F,L]
+RewriteRule ^api/config\.php$ - [F,L]
+
+# API routes -> PHP handler
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# SPA fallback: non-existent paths -> index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.html [L]

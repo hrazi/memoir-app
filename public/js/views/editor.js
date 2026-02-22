@@ -25,12 +25,18 @@ export function renderEditor(container) {
       <div class="content-center">
         <div class="empty-state">
           <div class="empty-icon">\u2712</div>
-          <h3>No chapters to edit</h3>
-          <p>Create some chapters first, then come back to write.</p>
-          <a href="#chapters" class="btn btn-primary">Go to Chapters</a>
+          <h3>Start writing</h3>
+          <p>Create a new chapter and start writing from scratch.</p>
+          <button class="btn btn-primary" id="create-and-write-btn">+ New Chapter</button>
+          <a href="#chapters" class="btn btn-secondary" style="margin-left: 8px;">Go to Chapters</a>
         </div>
       </div>
     `;
+    document.getElementById('create-and-write-btn')?.addEventListener('click', async () => {
+      const chapter = await api.createChapter(pid, { title: 'Untitled Chapter' });
+      setState({ chapters: [...getState().chapters, chapter] });
+      window.location.hash = `#editor?id=${chapter.id}`;
+    });
     return;
   }
 

@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { getState, setState } from '../state.js';
 import { stages, totalQuestions, getQuestion, getAbsoluteIndex } from '../prompts.js';
 import { showToast } from '../components/toast.js';
+import { renderMarkdown } from '../components/markdown.js';
 
 export function renderInterview(container) {
   const state = getState();
@@ -183,7 +184,7 @@ export function renderInterview(container) {
         followUpHTML = `
           <div class="follow-up-container">
             <h4>Follow-up questions to explore:</h4>
-            <p>${result.text}</p>
+            ${renderMarkdown(result.text)}
           </div>
         `;
         const savedAnswer = answer;

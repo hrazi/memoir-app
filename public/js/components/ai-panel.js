@@ -2,6 +2,7 @@
 
 import { api } from '../api.js';
 import { showToast } from './toast.js';
+import { renderMarkdown } from './markdown.js';
 
 export function createAIPanel(container, { projectId, getEditorText, onApply, onTitleApply, memories = [] } = {}) {
   let resultArea = null;
@@ -128,7 +129,7 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
 
       resultArea.innerHTML = `
         <div class="ai-result">
-          <div style="white-space: pre-line">${result.text}</div>
+          <div>${renderMarkdown(result.text)}</div>
           ${actionsHTML}
         </div>
       `;
@@ -154,7 +155,7 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
       }
 
       resultArea.querySelector('.ai-apply')?.addEventListener('click', () => {
-        const html = '\n\n' + result.text.split('\n\n').map(p => `<p>${p.trim()}</p>`).join('');
+        const html = '\n\n' + renderMarkdown(result.text);
         onApply?.(null, html); // always append, never replace
         resultArea.innerHTML = '';
         showToast('Appended to editor', 'success');

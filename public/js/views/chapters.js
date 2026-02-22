@@ -14,6 +14,7 @@ export function renderChapters(container) {
 
   let selectedChapterId = getState().chapters[0]?.id || null;
   let pendingSuggestions = null;
+  let expandedSuggestion = null; // index of expanded suggestion
 
   function render() {
     const chapters = getState().chapters;
@@ -35,21 +36,49 @@ export function renderChapters(container) {
         </div>
 
         ${pendingSuggestions ? `
-          <div class="suggestions-panel" style="background: var(--bg-card, #f8f9fa); border: 1px solid var(--border, #dee2e6); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-            <h3 style="margin: 0 0 16px; font-size: 1rem;">AI Suggested Structure</h3>
+          <div class="suggestions-panel" style="background: var(--bg-card, #f8f9fa); border: 2px solid var(--accent, #4a90d9); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 1.2rem;">\u2728</span>
+              <h3 style="margin: 0; font-size: 1rem;">AI Suggested Structure \u2014 Review Before Applying</h3>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0 0 16px;">Edit titles, expand to review memories, remove what you don\u2019t want. Nothing changes until you click \u201cApply\u201d.</p>
+            ${chapters.length > 0 ? `
+              <div style="background: var(--warning-bg, #fff3cd); border: 1px solid var(--warning-border, #ffc107); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.85rem; color: var(--warning-text, #856404);">
+                \u26A0\uFE0F You already have ${chapters.length} chapter${chapters.length === 1 ? '' : 's'}. These suggestions will be <strong>added alongside</strong> your existing chapters \u2014 nothing will be replaced or deleted.
+              </div>
+            ` : ''}
             <div class="suggestions-list">
-              ${pendingSuggestions.map((s, i) => `
-                <div class="suggestion-row" data-index="${i}" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                  <input type="text" class="input suggestion-title-input" data-index="${i}" value="${(s.title || '').replace(/"/g, '&quot;')}" placeholder="Chapter title" style="flex: 1;" />
-                  <span style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">${s.memoryIds.length} ${s.memoryIds.length === 1 ? 'memory' : 'memories'}</span>
-                  <button class="btn btn-ghost btn-sm remove-suggestion-btn" data-index="${i}" style="color: var(--danger); font-size: 1.2rem; padding: 2px 8px;">\u00D7</button>
+              ${pendingSuggestions.map((s, i) => {
+                const isExpanded = expandedSuggestion === i;
+                const memDetails = (s.memoryIds || []).map(mid => memories.find(m => m.id === mid)).filter(Boolean);
+                return `
+                <div class="suggestion-row" data-index="${i}" style="border: 1px solid var(--border, #dee2e6); border-radius: 6px; margin-bottom: 8px; overflow: hidden;">
+                  <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px;">
+                    <button class="btn btn-ghost btn-sm toggle-suggestion-btn" data-index="${i}" style="font-size: 0.8rem; padding: 2px 6px; min-width: 24px;" title="Show/hide memories">${isExpanded ? '\u25BC' : '\u25B6'}</button>
+                    <input type="text" class="input suggestion-title-input" data-index="${i}" value="${(s.title || '').replace(/"/g, '&quot;')}" placeholder="Chapter title" style="flex: 1;" />
+                    <span style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">${memDetails.length} ${memDetails.length === 1 ? 'memory' : 'memories'}</span>
+                    <button class="btn btn-ghost btn-sm remove-suggestion-btn" data-index="${i}" style="color: var(--danger); font-size: 1.2rem; padding: 2px 8px;" title="Remove this chapter suggestion">\u00D7</button>
+                  </div>
+                  ${isExpanded ? `
+                    <div style="border-top: 1px solid var(--border, #dee2e6); padding: 8px 12px 12px; background: var(--bg-main, #fff);">
+                      ${memDetails.length > 0 ? memDetails.map(mem => `
+                        <div style="display: flex; align-items: start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-light, #eee);">
+                          <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">${mem.question || ''}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${(mem.answer || '').substring(0, 120)}</div>
+                          </div>
+                          <button class="btn btn-ghost btn-sm remove-suggestion-memory-btn" data-suggestion-index="${i}" data-memory-id="${mem.id}" style="color: var(--danger); font-size: 0.9rem; padding: 2px 6px; flex-shrink: 0;" title="Remove this memory from suggestion">\u00D7</button>
+                        </div>
+                      `).join('') : '<p style="color: var(--text-muted); font-size: 0.82rem; padding: 4px 0;">No memories assigned</p>'}
+                    </div>
+                  ` : ''}
                 </div>
-              `).join('')}
+              `;}).join('')}
             </div>
             ${pendingSuggestions.length === 0 ? '<p style="color: var(--text-muted); font-size: 0.85rem;">All suggestions removed.</p>' : ''}
             <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
-              ${pendingSuggestions.length > 0 ? '<button class="btn btn-primary" id="apply-suggestions-btn">Add Chapters</button>' : ''}
-              <button class="btn btn-secondary" id="cancel-suggestions-btn">Cancel</button>
+              ${pendingSuggestions.length > 0 ? '<button class="btn btn-primary" id="apply-suggestions-btn">\u2705 Apply These Chapters</button>' : ''}
+              <button class="btn btn-secondary" id="cancel-suggestions-btn">Discard</button>
             </div>
           </div>
         ` : ''}
@@ -146,11 +175,32 @@ export function renderChapters(container) {
       });
     });
 
+    container.querySelectorAll('.toggle-suggestion-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index);
+        expandedSuggestion = expandedSuggestion === idx ? null : idx;
+        render();
+      });
+    });
+
     container.querySelectorAll('.remove-suggestion-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.index);
         if (pendingSuggestions) {
           pendingSuggestions.splice(idx, 1);
+          if (expandedSuggestion === idx) expandedSuggestion = null;
+          else if (expandedSuggestion !== null && expandedSuggestion > idx) expandedSuggestion--;
+          render();
+        }
+      });
+    });
+
+    container.querySelectorAll('.remove-suggestion-memory-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sIdx = parseInt(btn.dataset.suggestionIndex);
+        const memId = btn.dataset.memoryId;
+        if (pendingSuggestions && pendingSuggestions[sIdx]) {
+          pendingSuggestions[sIdx].memoryIds = pendingSuggestions[sIdx].memoryIds.filter(id => id !== memId);
           render();
         }
       });
@@ -160,6 +210,7 @@ export function renderChapters(container) {
       if (!pendingSuggestions || pendingSuggestions.length === 0) return;
       const toAdd = [...pendingSuggestions];
       pendingSuggestions = null;
+      expandedSuggestion = null;
 
       const newChapters = [];
       for (const sug of toAdd) {
@@ -174,6 +225,7 @@ export function renderChapters(container) {
 
     document.getElementById('cancel-suggestions-btn')?.addEventListener('click', () => {
       pendingSuggestions = null;
+      expandedSuggestion = null;
       render();
     });
 

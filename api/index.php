@@ -288,6 +288,15 @@ function aiExpand($projectId) {
     ));
 }
 
+function aiDraftOpening($projectId) {
+    $body = getBody();
+    $ctx = !empty($body['memories']) ? $body['memories'] : 'No specific memories provided.';
+    sendJSON(aiRequest(
+        'You are a warm, skilled memoir ghostwriter. Write an opening draft for a memoir chapter. Use the chapter title and reference memories to craft a compelling, first-person narrative opening. Set the scene, draw the reader in, and weave in details from the memories naturally. Write 3-5 paragraphs. Be vivid but authentic — this is someone\'s real life.',
+        'Chapter title: ' . ($body['title'] ?? 'Untitled') . "\n\nReference memories:\n" . $ctx
+    ));
+}
+
 function aiPolish($projectId) {
     $body = getBody();
     sendJSON(aiRequest(
@@ -572,6 +581,7 @@ if ($n >= 1 && $seg[0] === 'projects') {
     // /projects/:id/ai/*
     if ($resource === 'ai' && $n === 4 && $method === 'POST') {
         if ($seg[3] === 'expand')            aiExpand($projectId);
+        if ($seg[3] === 'draft-opening')     aiDraftOpening($projectId);
         if ($seg[3] === 'polish')            aiPolish($projectId);
         if ($seg[3] === 'follow-up')         aiFollowUp($projectId);
         if ($seg[3] === 'suggest-structure') aiSuggestStructure($projectId);

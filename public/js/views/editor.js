@@ -119,6 +119,7 @@ export function renderEditor(container) {
       createAIPanel(document.getElementById('ai-panel-container'), {
         projectId: pid,
         getEditorText: () => editor.getTextContent(),
+        chapterTitle: chapter.title || '',
         onApply: (html, appendHtml) => {
           if (appendHtml) {
             // Continue Writing: append to existing content

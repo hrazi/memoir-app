@@ -52,6 +52,7 @@ export const api = {
 
   // AI
   aiExpand: (projectId, text, memories) => request(`${p(projectId)}/ai/expand`, { method: 'POST', body: { text, memories } }),
+  aiDraftOpening: (projectId, title, memories) => request(`${p(projectId)}/ai/draft-opening`, { method: 'POST', body: { title, memories } }),
   aiPolish: (projectId, text) => request(`${p(projectId)}/ai/polish`, { method: 'POST', body: { text } }),
   aiFollowUp: (projectId, question, answer) => request(`${p(projectId)}/ai/follow-up`, { method: 'POST', body: { question, answer } }),
   aiSuggestStructure: (projectId, memories) => request(`${p(projectId)}/ai/suggest-structure`, { method: 'POST', body: { memories } }),

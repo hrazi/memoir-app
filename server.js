@@ -198,6 +198,16 @@ async function aiRequest(systemPrompt, userContent) {
   }
 }
 
+app.post('/api/projects/:projectId/ai/draft-opening', async (req, res) => {
+  const { title, memories } = req.body;
+  const ctx = memories || 'No specific memories provided.';
+  const result = await aiRequest(
+    'You are a warm, skilled memoir ghostwriter. Write an opening draft for a memoir chapter. Use the chapter title and reference memories to craft a compelling, first-person narrative opening. Set the scene, draw the reader in, and weave in details from the memories naturally. Write 3-5 paragraphs. Be vivid but authentic — this is someone\'s real life.',
+    `Chapter title: ${title || 'Untitled'}\n\nReference memories:\n${ctx}`
+  );
+  res.json(result);
+});
+
 app.post('/api/projects/:projectId/ai/expand', async (req, res) => {
   const { text, memories } = req.body;
   const ctx = memories ? `\n\nReference memories:\n${memories}` : '';

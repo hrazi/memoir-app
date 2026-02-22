@@ -4,13 +4,23 @@ import { api } from '../api.js';
 import { showToast } from './toast.js';
 import { renderMarkdown } from './markdown.js';
 
-export function createAIPanel(container, { projectId, getEditorText, onApply, onTitleApply, memories = [] } = {}) {
+export function createAIPanel(container, { projectId, getEditorText, onApply, onTitleApply, memories = [], chapterTitle = '' } = {}) {
   let resultArea = null;
 
   function render() {
+    const editorEmpty = !getEditorText?.() || getEditorText().trim().length < 10;
+
     container.innerHTML = `
       <div class="ai-panel">
         <h3>\u2728 AI Assistant</h3>
+
+        ${editorEmpty && memories.length > 0 ? `
+          <div class="ai-section-label">Get Started</div>
+          <button class="ai-tool-btn ai-tool-highlight" data-tool="draft-opening">
+            <h4>\uD83D\uDE80 Draft Opening</h4>
+            <p>AI writes a first draft using your ${memories.length} assigned ${memories.length === 1 ? 'memory' : 'memories'}</p>
+          </button>
+        ` : ''}
 
         <div class="ai-section-label">Writing</div>
         <button class="ai-tool-btn" data-tool="expand">
@@ -62,7 +72,9 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
 
   async function handleTool(tool) {
     const text = getEditorText?.();
-    if (!text || text.trim().length < 10) {
+
+    // draft-opening works on blank pages; all others need text
+    if (tool !== 'draft-opening' && (!text || text.trim().length < 10)) {
       showToast('Write some text first, then use AI tools to help.', 'error');
       return;
     }
@@ -74,6 +86,9 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
       const memoryText = memories.map(m => `${m.question}: ${m.answer}`).join('\n\n');
 
       switch (tool) {
+        case 'draft-opening':
+          result = await api.aiDraftOpening(projectId, chapterTitle, memoryText || undefined);
+          break;
         case 'expand':
           result = await api.aiExpand(projectId, text, memoryText || undefined);
           break;

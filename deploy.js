@@ -29,7 +29,6 @@ const staticFiles = collectFiles('public').map(f => ({
 // PHP API files
 const phpFiles = [
   { local: 'api/index.php', remote: '/abbu-book/api/index.php' },
-  { local: 'api/config.php', remote: '/abbu-book/api/config.php' },
 ];
 
 // Config files

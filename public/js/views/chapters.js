@@ -7,6 +7,57 @@ import { showToast } from '../components/toast.js';
 import { showModal } from '../components/modal.js';
 import { makeDraggable } from '../components/drag-list.js';
 
+function renderSuggestionsPanel(suggestions, memories, chapters) {
+  const assignedIds = new Set(chapters.flatMap(c => c.memoryIds || []));
+  const totalSelected = suggestions.reduce((n, s) => n + s.memoryIds.length, 0);
+  const conflictCount = suggestions.reduce((n, s) => n + s.memoryIds.filter(id => assignedIds.has(id)).length, 0);
+
+  return `
+    <div class="suggestions-panel" style="background: var(--bg-card, #f8f9fa); border: 2px solid var(--primary, #2D6A4F); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 1rem;">\u2728 Suggested Structure — Review Before Adding</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">${suggestions.length} chapter${suggestions.length === 1 ? '' : 's'}, ${totalSelected} memor${totalSelected === 1 ? 'y' : 'ies'} selected</span>
+      </div>
+      ${conflictCount > 0 ? `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.85rem; color: #856404;">\u26A0\uFE0F ${conflictCount} memor${conflictCount === 1 ? 'y is' : 'ies are'} already in existing chapters. Uncheck to skip or keep to assign to multiple.</div>` : ''}
+      <div class="suggestions-list">
+        ${suggestions.map((s, i) => {
+          const expanded = s._expanded !== false;
+          const allMems = (s._allMemoryIds || s.memoryIds).map(id => memories.find(m => m.id === id)).filter(Boolean);
+          return `
+          <div class="suggestion-row" data-index="${i}" style="border: 1px solid var(--border, #dee2e6); border-radius: 6px; margin-bottom: 10px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px;">
+              <button class="btn btn-ghost btn-sm toggle-suggestion-btn" data-index="${i}" style="font-size: 0.85rem; padding: 2px 6px; min-width: 22px;">${expanded ? '\u25BC' : '\u25B6'}</button>
+              <input type="text" class="input suggestion-title-input" data-index="${i}" value="${(s.title || '').replace(/"/g, '&quot;')}" placeholder="Chapter title" style="flex: 1; font-weight: 600;" />
+              <span class="sug-memory-count" style="color: var(--text-muted); font-size: 0.8rem; white-space: nowrap;">${s.memoryIds.length} memor${s.memoryIds.length === 1 ? 'y' : 'ies'}</span>
+              <button class="btn btn-ghost btn-sm remove-suggestion-btn" data-index="${i}" style="color: var(--danger); font-size: 1.2rem; padding: 2px 8px;" title="Remove chapter">\u00D7</button>
+            </div>
+            ${expanded ? `
+            <div style="padding: 6px 14px 10px; border-top: 1px solid var(--border, #eee);">
+              ${allMems.length === 0 ? '<p style="color: var(--text-muted); font-size: 0.82rem; margin: 4px 0;">No memories</p>' : allMems.map(mem => {
+                const checked = s.memoryIds.includes(mem.id);
+                const conflict = assignedIds.has(mem.id);
+                const conflictCh = conflict ? chapters.find(c => (c.memoryIds || []).includes(mem.id)) : null;
+                return `
+                <label style="display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid var(--border, #f0f0f0);">
+                  <input type="checkbox" class="suggestion-memory-cb" data-sug-index="${i}" data-mem-id="${mem.id}" ${checked ? 'checked' : ''} style="margin-top: 3px;" />
+                  <span style="flex: 1;${conflict ? ' color: #856404;' : ''}">
+                    <strong>${(mem.question || '').substring(0, 60)}</strong>: ${(mem.answer || '').substring(0, 100)}...
+                    ${conflict ? `<br><span style="font-size: 0.78rem;">\u26A0\uFE0F Already in \u201C${conflictCh?.title || 'Untitled'}\u201D</span>` : ''}
+                  </span>
+                </label>`;
+              }).join('')}
+            </div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+      ${suggestions.length === 0 ? '<p style="color: var(--text-muted); font-size: 0.85rem;">All suggestions removed.</p>' : ''}
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
+        ${suggestions.length > 0 ? '<button class="btn btn-primary" id="apply-suggestions-btn">Add Selected Chapters</button>' : ''}
+        <button class="btn btn-secondary" id="cancel-suggestions-btn">Discard</button>
+      </div>
+    </div>`;
+}
+
 export function renderChapters(container) {
   const state = getState();
   const pid = state.currentProjectId;
@@ -35,53 +86,7 @@ export function renderChapters(container) {
           </div>
         </div>
 
-        ${pendingSuggestions ? `
-          <div class="suggestions-panel" style="background: var(--bg-card, #f8f9fa); border: 2px solid var(--accent, #4a90d9); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-              <span style="font-size: 1.2rem;">\u2728</span>
-              <h3 style="margin: 0; font-size: 1rem;">AI Suggested Structure \u2014 Review Before Applying</h3>
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0 0 16px;">Edit titles, expand to review memories, remove what you don\u2019t want. Nothing changes until you click \u201cApply\u201d.</p>
-            ${chapters.length > 0 ? `
-              <div style="background: var(--warning-bg, #fff3cd); border: 1px solid var(--warning-border, #ffc107); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.85rem; color: var(--warning-text, #856404);">
-                \u26A0\uFE0F You already have ${chapters.length} chapter${chapters.length === 1 ? '' : 's'}. These suggestions will be <strong>added alongside</strong> your existing chapters \u2014 nothing will be replaced or deleted.
-              </div>
-            ` : ''}
-            <div class="suggestions-list">
-              ${pendingSuggestions.map((s, i) => {
-                const isExpanded = expandedSuggestion === i;
-                const memDetails = (s.memoryIds || []).map(mid => memories.find(m => m.id === mid)).filter(Boolean);
-                return `
-                <div class="suggestion-row" data-index="${i}" style="border: 1px solid var(--border, #dee2e6); border-radius: 6px; margin-bottom: 8px; overflow: hidden;">
-                  <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px;">
-                    <button class="btn btn-ghost btn-sm toggle-suggestion-btn" data-index="${i}" style="font-size: 0.8rem; padding: 2px 6px; min-width: 24px;" title="Show/hide memories">${isExpanded ? '\u25BC' : '\u25B6'}</button>
-                    <input type="text" class="input suggestion-title-input" data-index="${i}" value="${(s.title || '').replace(/"/g, '&quot;')}" placeholder="Chapter title" style="flex: 1;" />
-                    <span style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">${memDetails.length} ${memDetails.length === 1 ? 'memory' : 'memories'}</span>
-                    <button class="btn btn-ghost btn-sm remove-suggestion-btn" data-index="${i}" style="color: var(--danger); font-size: 1.2rem; padding: 2px 8px;" title="Remove this chapter suggestion">\u00D7</button>
-                  </div>
-                  ${isExpanded ? `
-                    <div style="border-top: 1px solid var(--border, #dee2e6); padding: 8px 12px 12px; background: var(--bg-main, #fff);">
-                      ${memDetails.length > 0 ? memDetails.map(mem => `
-                        <div style="display: flex; align-items: start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-light, #eee);">
-                          <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">${mem.question || ''}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${(mem.answer || '').substring(0, 120)}</div>
-                          </div>
-                          <button class="btn btn-ghost btn-sm remove-suggestion-memory-btn" data-suggestion-index="${i}" data-memory-id="${mem.id}" style="color: var(--danger); font-size: 0.9rem; padding: 2px 6px; flex-shrink: 0;" title="Remove this memory from suggestion">\u00D7</button>
-                        </div>
-                      `).join('') : '<p style="color: var(--text-muted); font-size: 0.82rem; padding: 4px 0;">No memories assigned</p>'}
-                    </div>
-                  ` : ''}
-                </div>
-              `;}).join('')}
-            </div>
-            ${pendingSuggestions.length === 0 ? '<p style="color: var(--text-muted); font-size: 0.85rem;">All suggestions removed.</p>' : ''}
-            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
-              ${pendingSuggestions.length > 0 ? '<button class="btn btn-primary" id="apply-suggestions-btn">\u2705 Apply These Chapters</button>' : ''}
-              <button class="btn btn-secondary" id="cancel-suggestions-btn">Discard</button>
-            </div>
-          </div>
-        ` : ''}
+        ${pendingSuggestions ? renderSuggestionsPanel(pendingSuggestions, memories, chapters) : ''}
 
         ${chapters.length === 0 && memories.length === 0 ? `
           <div class="empty-state">
@@ -178,8 +183,31 @@ export function renderChapters(container) {
     container.querySelectorAll('.toggle-suggestion-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.index);
-        expandedSuggestion = expandedSuggestion === idx ? null : idx;
-        render();
+        if (pendingSuggestions && pendingSuggestions[idx]) {
+          pendingSuggestions[idx]._expanded = !pendingSuggestions[idx]._expanded;
+          render();
+        }
+      });
+    });
+
+    container.querySelectorAll('.suggestion-memory-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const idx = parseInt(cb.dataset.sugIndex);
+        const memId = cb.dataset.memId;
+        if (!pendingSuggestions || !pendingSuggestions[idx]) return;
+        if (cb.checked) {
+          if (!pendingSuggestions[idx].memoryIds.includes(memId)) {
+            pendingSuggestions[idx].memoryIds.push(memId);
+          }
+        } else {
+          pendingSuggestions[idx].memoryIds = pendingSuggestions[idx].memoryIds.filter(id => id !== memId);
+        }
+        // Update the count display without full re-render
+        const countEl = cb.closest('.suggestion-row')?.querySelector('.sug-memory-count');
+        if (countEl) {
+          const n = pendingSuggestions[idx].memoryIds.length;
+          countEl.textContent = `${n} memor${n === 1 ? 'y' : 'ies'}`;
+        }
       });
     });
 
@@ -208,7 +236,12 @@ export function renderChapters(container) {
 
     document.getElementById('apply-suggestions-btn')?.addEventListener('click', async () => {
       if (!pendingSuggestions || pendingSuggestions.length === 0) return;
-      const toAdd = [...pendingSuggestions];
+      // Only add chapters that still have memories
+      const toAdd = pendingSuggestions.filter(s => s.memoryIds.length > 0);
+      if (toAdd.length === 0) {
+        showToast('No chapters have memories selected.', 'error');
+        return;
+      }
       pendingSuggestions = null;
       expandedSuggestion = null;
 
@@ -363,6 +396,10 @@ export function renderChapters(container) {
       // Populate pending suggestions for inline review
       pendingSuggestions = suggestions.map(sug => ({
         title: sug.title,
+        _expanded: true,
+        _allMemoryIds: (sug.memoryIndices || [])
+          .map(i => memories[i - 1]?.id)
+          .filter(Boolean),
         memoryIds: (sug.memoryIndices || [])
           .map(i => memories[i - 1]?.id)
           .filter(Boolean),

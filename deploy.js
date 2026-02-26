@@ -26,7 +26,7 @@ const staticFiles = collectFiles('public').map(f => ({
   remote: `/abbu-book/${f}`,
 }));
 
-// PHP API files
+// PHP API files (config.php excluded — contains API key, managed manually on server)
 const phpFiles = [
   { local: 'api/index.php', remote: '/abbu-book/api/index.php' },
 ];

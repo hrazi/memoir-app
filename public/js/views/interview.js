@@ -126,10 +126,12 @@ export function renderInterview(container) {
     }
     activeRecognition = recognition;
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     let isRecording = false;
+    let baseText = '';
+    let committed = '';
 
     function setRecording(active) {
       isRecording = active;
@@ -140,15 +142,15 @@ export function renderInterview(container) {
     }
 
     recognition.onresult = (e) => {
-      let transcript = '';
+      let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+        if (e.results[i].isFinal) committed += e.results[i][0].transcript;
+        else interim = e.results[i][0].transcript;
       }
-      if (!transcript) return;
       const ta = document.getElementById('interview-answer');
       if (!ta) return;
-      const sep = ta.value && !ta.value.endsWith(' ') ? ' ' : '';
-      ta.value += sep + transcript;
+      const sep = baseText && !baseText.endsWith(' ') ? ' ' : '';
+      ta.value = baseText + (committed || interim ? sep : '') + committed + interim;
     };
 
     recognition.onerror = (e) => {
@@ -170,6 +172,9 @@ export function renderInterview(container) {
         recognition.stop();
         setRecording(false);
       } else {
+        const ta = document.getElementById('interview-answer');
+        baseText = ta ? ta.value : '';
+        committed = '';
         recognition.start();
         setRecording(true);
       }

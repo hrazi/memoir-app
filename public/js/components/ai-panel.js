@@ -4,22 +4,23 @@ import { api } from '../api.js';
 import { showToast } from './toast.js';
 import { renderMarkdown } from './markdown.js';
 
-export function createAIPanel(container, { projectId, getEditorText, onApply, onTitleApply, memories = [], chapterTitle = '' } = {}) {
+export function createAIPanel(container, { projectId, chapterTitle = '', getEditorText, onApply, onTitleApply, memories = [] } = {}) {
   let resultArea = null;
 
   function render() {
-    const editorEmpty = !getEditorText?.() || getEditorText().trim().length < 10;
+    const isEmpty = !getEditorText?.() || getEditorText().trim().length < 10;
+    const hasMemories = memories.length > 0;
 
     container.innerHTML = `
       <div class="ai-panel">
         <h3>\u2728 AI Assistant</h3>
 
-        ${editorEmpty && memories.length > 0 ? `
-          <div class="ai-section-label">Get Started</div>
-          <button class="ai-tool-btn ai-tool-highlight" data-tool="draft-opening">
-            <h4>\uD83D\uDE80 Draft Opening</h4>
-            <p>AI writes a first draft using your ${memories.length} assigned ${memories.length === 1 ? 'memory' : 'memories'}</p>
-          </button>
+        ${isEmpty && hasMemories ? `
+        <div class="ai-section-label">Start Here</div>
+        <button class="ai-tool-btn ai-tool-btn--featured" data-tool="draft-from-memories">
+          <h4>\uD83D\uDCDD Write from Memories</h4>
+          <p>Generate an opening draft using the ${memories.length} memor${memories.length === 1 ? 'y' : 'ies'} in this chapter</p>
+        </button>
         ` : ''}
 
         <div class="ai-section-label">Writing</div>
@@ -72,9 +73,7 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
 
   async function handleTool(tool) {
     const text = getEditorText?.();
-
-    // draft-opening works on blank pages; all others need text
-    if (tool !== 'draft-opening' && (!text || text.trim().length < 10)) {
+    if (tool !== 'draft-from-memories' && (!text || text.trim().length < 10)) {
       showToast('Write some text first, then use AI tools to help.', 'error');
       return;
     }
@@ -86,9 +85,6 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
       const memoryText = memories.map(m => `${m.question}: ${m.answer}`).join('\n\n');
 
       switch (tool) {
-        case 'draft-opening':
-          result = await api.aiDraftOpening(projectId, chapterTitle, memoryText || undefined);
-          break;
         case 'expand':
           result = await api.aiExpand(projectId, text, memoryText || undefined);
           break;
@@ -113,6 +109,9 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
         case 'summarize':
           result = await api.aiSummarize(projectId, text);
           break;
+        case 'draft-from-memories':
+          result = await api.aiDraftFromMemories(projectId, memories, chapterTitle);
+          break;
       }
 
       if (result.error) {
@@ -124,6 +123,7 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
       const infoOnly = tool === 'follow-up' || tool === 'summarize';
       const isTitleSuggestion = tool === 'suggest-title';
       const isContinue = tool === 'continue';
+      const isDraft = tool === 'draft-from-memories';
 
       let actionsHTML = '';
       if (isTitleSuggestion) {
@@ -132,6 +132,13 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
             <button class="btn btn-ghost btn-sm ai-dismiss">Dismiss</button>
           </div>
           <div class="ai-title-picks"></div>
+        `;
+      } else if (isDraft) {
+        actionsHTML = `
+          <div class="ai-actions">
+            <button class="btn btn-primary btn-sm ai-apply">Insert into Editor</button>
+            <button class="btn btn-ghost btn-sm ai-dismiss">Dismiss</button>
+          </div>
         `;
       } else if (!infoOnly) {
         actionsHTML = `
@@ -170,10 +177,17 @@ export function createAIPanel(container, { projectId, getEditorText, onApply, on
       }
 
       resultArea.querySelector('.ai-apply')?.addEventListener('click', () => {
-        const html = '\n\n' + renderMarkdown(result.text);
-        onApply?.(null, html); // always append, never replace
-        resultArea.innerHTML = '';
-        showToast('Appended to editor', 'success');
+        const html = result.text.split('\n\n').map(p => `<p>${p.trim()}</p>`).join('');
+        if (isDraft) {
+          onApply?.(html, null); // replace editor content
+          resultArea.innerHTML = '';
+          render(); // refresh panel to hide "Write from Memories" button
+          showToast('Draft inserted!', 'success');
+        } else {
+          onApply?.(null, '\n\n' + renderMarkdown(result.text)); // append with markdown
+          resultArea.innerHTML = '';
+          showToast('Appended to editor', 'success');
+        }
       });
 
       resultArea.querySelector('.ai-dismiss')?.addEventListener('click', () => {

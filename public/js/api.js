@@ -55,6 +55,7 @@ export const api = {
   aiDraftOpening: (projectId, title, memories) => request(`${p(projectId)}/ai/draft-opening`, { method: 'POST', body: { title, memories } }),
   aiPolish: (projectId, text) => request(`${p(projectId)}/ai/polish`, { method: 'POST', body: { text } }),
   aiFollowUp: (projectId, question, answer) => request(`${p(projectId)}/ai/follow-up`, { method: 'POST', body: { question, answer } }),
+  aiDraftFromMemories: (projectId, memories, chapterTitle) => request(`${p(projectId)}/ai/draft-from-memories`, { method: 'POST', body: { memories, chapterTitle } }),
   aiSuggestStructure: (projectId, memories) => request(`${p(projectId)}/ai/suggest-structure`, { method: 'POST', body: { memories } }),
   aiContinue: (projectId, text, memories) => request(`${p(projectId)}/ai/continue`, { method: 'POST', body: { text, memories } }),
   aiSensoryDetails: (projectId, text) => request(`${p(projectId)}/ai/sensory-details`, { method: 'POST', body: { text } }),

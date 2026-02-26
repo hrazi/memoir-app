@@ -118,6 +118,7 @@ export function renderEditor(container) {
     if (!panelCollapsed) {
       createAIPanel(document.getElementById('ai-panel-container'), {
         projectId: pid,
+        chapterTitle: chapter.title || '',
         getEditorText: () => editor.getTextContent(),
         chapterTitle: chapter.title || '',
         onApply: (html, appendHtml) => {

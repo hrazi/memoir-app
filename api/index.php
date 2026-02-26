@@ -354,6 +354,21 @@ function aiSummarize($projectId) {
     ));
 }
 
+function aiDraftFromMemories($projectId) {
+    $body = getBody();
+    $memories = $body['memories'] ?? [];
+    $chapterTitle = $body['chapterTitle'] ?? '';
+    $memoryText = '';
+    foreach ($memories as $m) {
+        $memoryText .= "Q: " . ($m['question'] ?? '') . "\nA: " . ($m['answer'] ?? '') . "\n\n";
+    }
+    $titleLine = $chapterTitle ? "Chapter title: $chapterTitle\n\n" : '';
+    sendJSON(aiRequest(
+        'You are a warm, skilled memoir ghostwriter. Using the author\'s own memories below, write an opening narrative for a memoir chapter. Write in first-person, in a warm and personal voice. Weave the memories naturally into flowing prose — do not list them or quote them directly. Write 3-4 paragraphs that feel like the opening of a real memoir chapter.',
+        $titleLine . "Author's memories:\n\n" . $memoryText
+    ));
+}
+
 function aiSuggestStructure($projectId) {
     $body = getBody();
     $memories = $body['memories'] ?? [];
@@ -584,6 +599,7 @@ if ($n >= 1 && $seg[0] === 'projects') {
         if ($seg[3] === 'draft-opening')     aiDraftOpening($projectId);
         if ($seg[3] === 'polish')            aiPolish($projectId);
         if ($seg[3] === 'follow-up')         aiFollowUp($projectId);
+        if ($seg[3] === 'draft-from-memories') aiDraftFromMemories($projectId);
         if ($seg[3] === 'suggest-structure') aiSuggestStructure($projectId);
         if ($seg[3] === 'continue')          aiContinue($projectId);
         if ($seg[3] === 'sensory-details')   aiSensoryDetails($projectId);

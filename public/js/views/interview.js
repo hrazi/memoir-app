@@ -15,6 +15,7 @@ export function renderInterview(container) {
   let stageIdx = project.interviewStage || 0;
   let qIdx = project.interviewQuestion || 0;
   let followUpHTML = '';
+  const speechSupported = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
 
   function render() {
     const q = getQuestion(stageIdx, qIdx);
@@ -61,7 +62,9 @@ export function renderInterview(container) {
           <button class="btn btn-primary btn-lg" id="save-next-btn">Save & Next</button>
           <button class="btn btn-secondary" id="skip-btn">Skip</button>
           <button class="btn btn-ghost" id="follow-up-btn">\u2728 AI Follow-Up</button>
+          ${speechSupported ? `<button class="btn btn-secondary" id="mic-btn">\uD83C\uDF99 Speak</button>` : ''}
         </div>
+        ${speechSupported ? `<div id="mic-status" style="font-size:0.82rem; color: var(--danger, #dc3545); min-height: 1.2em; margin-top: 6px;"></div>` : ''}
 
         <div class="interview-progress">
           Question ${qIdx + 1} of ${stage.questions.length} in ${stage.name} \u00B7 ${absIdx + 1} of ${totalQuestions} total

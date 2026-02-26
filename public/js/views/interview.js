@@ -15,6 +15,7 @@ export function renderInterview(container) {
   let stageIdx = project.interviewStage || 0;
   let qIdx = project.interviewQuestion || 0;
   let followUpHTML = '';
+  let activeRecognition = null;
   const speechSupported = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
 
   function render() {
@@ -117,6 +118,10 @@ export function renderInterview(container) {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    if (activeRecognition) {
+      try { activeRecognition.stop(); } catch {}
+    }
+    activeRecognition = recognition;
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = 'en-US';

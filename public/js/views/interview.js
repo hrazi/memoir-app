@@ -65,7 +65,7 @@ export function renderInterview(container) {
           <button class="btn btn-ghost" id="follow-up-btn">\u2728 AI Follow-Up</button>
           ${speechSupported ? `<button class="btn btn-secondary" id="mic-btn">\uD83C\uDF99 Speak</button>` : ''}
         </div>
-        ${speechSupported ? `<div id="mic-status" style="font-size:0.82rem; color: var(--danger, #dc3545); min-height: 1.2em; margin-top: 6px;"></div>` : ''}
+        ${speechSupported ? `<div id="mic-status" class="mic-status"></div>` : ''}
 
         <div class="interview-progress">
           Question ${qIdx + 1} of ${stage.questions.length} in ${stage.name} \u00B7 ${absIdx + 1} of ${totalQuestions} total
@@ -119,7 +119,10 @@ export function renderInterview(container) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     if (activeRecognition) {
-      try { activeRecognition.stop(); } catch {}
+      try {
+        activeRecognition.onend = null;
+        activeRecognition.stop();
+      } catch {}
     }
     activeRecognition = recognition;
     recognition.continuous = true;
@@ -137,10 +140,10 @@ export function renderInterview(container) {
     }
 
     recognition.onresult = (e) => {
-      const transcript = Array.from(e.results)
-        .filter(r => r.isFinal)
-        .map(r => r[0].transcript)
-        .join('');
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+      }
       if (!transcript) return;
       const ta = document.getElementById('interview-answer');
       if (!ta) return;
@@ -152,9 +155,6 @@ export function renderInterview(container) {
       if (e.error === 'not-allowed') {
         showToast('Microphone access was denied.', 'error');
         setRecording(false);
-      } else if (e.error === 'no-speech' && isRecording) {
-        recognition.stop();
-        recognition.start();
       }
     };
 

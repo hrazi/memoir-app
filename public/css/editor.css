@@ -128,8 +128,16 @@
   50% { opacity: 0.5; }
 }
 
+.mic-status {
+  font-size: 0.82rem;
+  color: var(--danger, #C44536);
+  min-height: 1.2em;
+  margin-top: 6px;
+  text-align: center;
+}
+
 .btn-recording {
-  background: var(--danger, #dc3545) !important;
-  color: #fff !important;
+  background: var(--danger, #C44536);
+  color: #fff;
   animation: mic-pulse 1.2s ease-in-out infinite;
 }

@@ -122,3 +122,14 @@
     font-size: 1rem;
   }
 }
+
+@keyframes mic-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.btn-recording {
+  background: var(--danger, #dc3545) !important;
+  color: #fff !important;
+  animation: mic-pulse 1.2s ease-in-out infinite;
+}

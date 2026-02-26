@@ -107,6 +107,68 @@ export function renderInterview(container) {
       saveProgress();
       render();
     });
+    setupMic();
+  }
+
+  function setupMic() {
+    if (!speechSupported) return;
+    const btn = document.getElementById('mic-btn');
+    if (!btn) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    let isRecording = false;
+
+    function setRecording(active) {
+      isRecording = active;
+      btn.textContent = active ? '\u23F9 Stop' : '\uD83C\uDF99 Speak';
+      btn.classList.toggle('btn-recording', active);
+      const status = document.getElementById('mic-status');
+      if (status) status.textContent = active ? '\uD83D\uDD34 Listening\u2026' : '';
+    }
+
+    recognition.onresult = (e) => {
+      const transcript = Array.from(e.results)
+        .filter(r => r.isFinal)
+        .map(r => r[0].transcript)
+        .join('');
+      if (!transcript) return;
+      const ta = document.getElementById('interview-answer');
+      if (!ta) return;
+      const sep = ta.value && !ta.value.endsWith(' ') ? ' ' : '';
+      ta.value += sep + transcript;
+    };
+
+    recognition.onerror = (e) => {
+      if (e.error === 'not-allowed') {
+        showToast('Microphone access was denied.', 'error');
+        setRecording(false);
+      } else if (e.error === 'no-speech' && isRecording) {
+        recognition.stop();
+        recognition.start();
+      }
+    };
+
+    recognition.onend = () => {
+      if (isRecording) {
+        recognition.start();
+      }
+    };
+
+    btn.addEventListener('click', () => {
+      if (isRecording) {
+        isRecording = false;
+        recognition.stop();
+        setRecording(false);
+      } else {
+        recognition.start();
+        setRecording(true);
+      }
+    });
   }
 
   async function saveAndNext() {
